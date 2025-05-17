@@ -1,0 +1,14 @@
+{
+    "items": {
+        "GQGPIU": {
+            "name": "The Catcher in the Rye",
+            "type": "Classic",
+            "price": 11.0
+        },
+        "NXGJIX": {
+            "name": "The Grapes of Wrath",
+            "type": "Novel",
+            "price": 14.0
+        }
+    }
+}

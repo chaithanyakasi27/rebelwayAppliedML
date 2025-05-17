@@ -1,0 +1,29 @@
+{
+    "items": {
+        "ABC123": {
+            "name": "1984",
+            "type": "Dystopian",
+            "price": 8.99
+        },
+        "XYZ789": {
+            "name": "To Kill a Mockingbird",
+            "type": "Classic",
+            "price": 9.99
+        },
+        "JKL321": {
+            "name": "Brave New World",
+            "type": "Science Fiction",
+            "price": 7.99
+        },
+        "HP001": {
+            "name": "Harry Potter and the Sorcerer's Stone",
+            "type": "Fantasy",
+            "price": 12.99
+        },
+        "TCMLJV": {
+            "name": "Harry Potter and the Sorcerer's Stone",
+            "type": "Fantasy",
+            "price": 12.99
+        }
+    }
+}
