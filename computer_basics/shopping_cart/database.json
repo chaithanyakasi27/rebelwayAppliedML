@@ -1,0 +1,24 @@
+{
+    "items": {
+        "IDMLYO": {
+            "name": "Iphone15",
+            "type": "Moblie",
+            "price": 1000
+        },
+        "KLOPSA": {
+            "name": "Oneplus5",
+            "type": "Moblie",
+            "price": 800
+        },
+        "LOPSJR": {
+            "name": "Samsung",
+            "type": "Mobile",
+            "price": 1200
+        },
+        "CKTPNH": {
+            "name": "Oppo",
+            "type": "Moblie",
+            "price": 450
+        }
+    }
+}
