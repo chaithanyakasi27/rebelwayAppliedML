@@ -1,0 +1,14 @@
+{
+    "items": {
+        "KAMGIU": {
+            "name": "Audi",
+            "type": "car",
+            "price": 2.0
+        },
+        "MOMIKR": {
+            "name": "BMW",
+            "type": "car",
+            "price": 2.0
+        }
+    }
+}
