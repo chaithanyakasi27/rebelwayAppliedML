@@ -1,0 +1,155 @@
+import hou
+import math
+import sys
+
+
+sys.path.append(r"D:\portfolio class\3D\development\ML\rebelwayAppliedML\a_star\scripts")
+from a_star import AStarPathFinding
+
+def get_maze_from_grid():
+    # threshold-based white detection
+    def is_white(color, threshold=0.95):
+        return isinstance(color, tuple) and len(color) == 3 and all(c >= threshold for c in color)
+
+    grid_parm = hou.pwd().parm('grid_path')
+    if grid_parm is None:
+        raise ValueError("Missing 'grid_path' parameter on the current node.")
+
+    grid = grid_parm.eval()
+    geo_node = hou.node(grid)
+    if geo_node is None:
+        raise ValueError(f"Invalid node path: {grid}")
+    
+    geo = geo_node.geometry()
+    prims = geo.prims()
+
+    total_prims = len(prims)
+    side_len = int(math.sqrt(total_prims))
+
+    if side_len * side_len != total_prims:
+        raise ValueError(f"The number of primitives ({total_prims}) does not form a perfect square grid.")
+
+    num_rows = num_columns = side_len
+
+    if len(prims) < num_rows * num_columns:
+        raise ValueError(f"Geometry has insufficient primitives ({len(prims)}). "
+                         f"Expected at least {num_rows * num_columns} for {num_rows}×{num_columns} grid.")
+    
+    grid_matrix = []
+    for row in range(num_rows):
+        new_row = []
+        for col in range(num_columns):
+            prim_index = row * num_columns + col
+            prim = geo.prim(prim_index)
+            color = prim.attribValue("Cd")
+            new_row.append(1 if is_white(color) else 0)
+        grid_matrix.append(new_row)
+    
+    print("Maze Grid:")
+    for r in grid_matrix:
+        print(r)
+
+    # Debug: ensure your target tile is walkable
+    print("Target tile (0,1) value:", grid_matrix[0][1])
+
+    return grid_matrix
+
+def position_object(obj_path, row, col, cell_size=1): 
+    node = hou.node(obj_path)
+    if node is None:
+        raise ValueError(f"Invalid node path: '{obj_path}'. Ensure the path is correct and the node exists.")
+    
+    t_parm = node.parmTuple("t")
+    if t_parm is None:
+        raise ValueError(f"Node '{obj_path}' does not have a 't' (translate) parameter. It must be an object-level node.")
+
+    world_x = col * cell_size
+    world_z = row * cell_size
+    t_parm.set((world_x, 0, world_z))
+    return (row, col)
+
+def animate_npc(obj_path, path, start_frame, end_frame, cell_size=1):
+    node = hou.node(obj_path)
+    if not node:
+        raise ValueError(f"Cannot find node at path: {obj_path}")
+
+    t_parm = node.parmTuple("t")
+    if not t_parm:
+        raise ValueError(f"Node at path '{obj_path}' must have a translate (t) parameter.")
+
+    num_steps = len(path)
+    if num_steps < 2:
+        print(f"Path for {obj_path} is too short to animate.")
+        return
+
+    frame_step = (end_frame - start_frame) / (num_steps - 1)
+    for i, (row, col) in enumerate(path):
+        frame   = round(start_frame + i * frame_step)
+        world_x = col * cell_size
+        world_z = row * cell_size
+
+        t_parm[0].setKeyframe(hou.Keyframe(world_x, frame))
+        t_parm[1].setKeyframe(hou.Keyframe(0,       frame))
+        t_parm[2].setKeyframe(hou.Keyframe(world_z, frame))
+
+    print(f"{obj_path} animated to reach destination at frame {end_frame}.")
+
+def solve_maze():
+    current_node   = hou.pwd()
+    # read your five path parameters
+    main_char_parm = current_node.parm("main_char")
+    npc1_char_parm = current_node.parm("npc_1")
+    npc2_char_parm = current_node.parm("npc_2")
+    npc3_char_parm = current_node.parm("npc_3")
+    npc4_char_parm = current_node.parm("npc_4")
+
+    if not (main_char_parm and npc1_char_parm and npc2_char_parm and
+            npc3_char_parm and npc4_char_parm):
+        raise ValueError("Missing one or more parms: 'main_char', 'npc_1'…'npc_4' on the current node.")
+
+    # resolve each to its object path
+    main_char_path = main_char_parm.eval()
+    npc1_char_path = npc1_char_parm.eval()
+    npc2_char_path = npc2_char_parm.eval()
+    npc3_char_path = npc3_char_parm.eval()
+    npc4_char_path = npc4_char_parm.eval()
+    print("Main character path:", main_char_path)
+    print("NPC1 character path:", npc1_char_path)
+    print("NPC2 character path:", npc2_char_path)
+    print("NPC3 character path:", npc3_char_path)
+    print("NPC4 character path:", npc4_char_path)
+
+    # start / target for each NPC
+    npc1_start, npc1_target = (0, 3), (6, 1)
+    npc2_start, npc2_target = (6, 5), (6, 1)
+    npc3_start, npc3_target = (2, 0), (6, 1)
+    npc4_start, npc4_target = (1, 6), (6, 1)
+
+    # place main character
+    position_object(obj_path=main_char_path, row=6, col=1)
+
+    # place NPCs at their starts
+    position_object(obj_path=npc1_char_path, row=npc1_start[0], col=npc1_start[1])
+    position_object(obj_path=npc2_char_path, row=npc2_start[0], col=npc2_start[1])
+    position_object(obj_path=npc3_char_path, row=npc3_start[0], col=npc3_start[1])
+    position_object(obj_path=npc4_char_path, row=npc4_start[0], col=npc4_start[1])
+
+    # (optional) visual debug of the target:
+    # position_object("/obj/debug_target", 0, 1)
+
+    maze = get_maze_from_grid()
+
+    # run A* for each
+    def find_and_animate(start, target, path_str, start_f, end_f):
+        pf   = AStarPathFinding(maze, start, target)
+        path = pf.find_path()
+        if path:
+            print(f"Path for {path_str}:", path)
+            animate_npc(path_str, path, start_f, end_f)
+        else:
+            print(f"No path found for {path_str}.")
+
+    find_and_animate(npc1_start, npc1_target, npc1_char_path, 1, 7)
+    find_and_animate(npc2_start, npc2_target, npc2_char_path, 1, 5)
+    find_and_animate(npc3_start, npc3_target, npc3_char_path, 1,10)
+    find_and_animate(npc4_start, npc4_target, npc4_char_path, 1, 8)
