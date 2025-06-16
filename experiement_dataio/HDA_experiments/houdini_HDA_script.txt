@@ -1,0 +1,55 @@
+import pandas as pd
+import hou
+
+DATA_FILE_PATH = hou.pwd().parm('input_file').eval()
+
+def print_datafile():
+    print(DATA_FILE_PATH)
+
+def create_df():
+    df = pd.read_csv(DATA_FILE_PATH)
+    print(df.head())
+    return df
+
+def print_dataset(df, head=True):
+    if head:
+        print(df.head())
+    else:
+        print(df)
+
+def scatter_data_points(df, x, y, z):
+    # Get the parent node (call the method!)
+    parent_node = hou.pwd().parent()
+    
+    # Create a subnet under that parent
+    data_net = parent_node.createNode('subnet','data_points')
+    print("Created subnet at:", data_net.path())
+    python_sop = data_net.createNode('python', 'create_points')
+    data_len = len(x)
+    
+    python_code = f"""
+geo = hou.pwd().geometry()
+geo.clear()
+positions = [({x}[i], {y}[i],{z}[i])for i in range({data_len})]
+
+for pos in positions:
+    point = geo.createPoint()
+    point.setPosition(hou.Vector3(pos))
+    """
+    
+    python_sop.parm("python").set(python_code)
+    # (You could now populate that subnet with SOPs using x, y data...)
+    return data_net
+
+def print_df():
+    df = create_df()
+    print_dataset(df)
+    
+    
+def execute_data():
+    df = create_df()
+    x = df['english'].to_list()
+    y = df['math'].to_list()
+    z = df['art_culture'].to_list()
+    scatter_data_points(df, x, y,z)
+    print_dataset(df=df)
